@@ -1,6 +1,7 @@
 # Can be set from command line, like `make deploy ENV=prod`
-ORG=ronoaldo-apigee-demo
+ORG=training-gcp-demos
 ENV=eval
+SA=apigee-demos@$(ORG).iam.gserviceaccount.com
 
 # Global configuration
 PROXY=gcpreleases-v1
@@ -29,7 +30,7 @@ deploy-with-script: clean bundle
 
 deploy: clean bundle .apigeecli-setup
 	apigeecli apis create bundle --name $(PROXY) --proxy-zip $(BUNDLE_ZIP_FILE)
-	apigeecli apis deploy -e $(ENV) -r --name $(PROXY) --sa apigee@ronoaldo-apigee-demo.iam.gserviceaccount.com --wait
+	apigeecli apis deploy --env $(ENV) --ovr --name $(PROXY) --sa $(SA) --wait
 
 clean-revisions: .apigeecli-setup
 	apigeecli apis clean --name $(PROXY) --report=false

@@ -2,7 +2,7 @@
   "proxies": [
     {
       "name": "gcpreleases-v1",
-      "serviceAccount": "apigee@ronoaldo-apigee-demo.iam.gserviceaccount.com"
+      "serviceAccount": "apigee-demos@training-gcp-demos.iam.gserviceaccount.com"
     }
   ],
   "sharedflows": []

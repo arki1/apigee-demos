@@ -1,13 +1,18 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <AssignMessage continueOnError="false" enabled="true" name="AM-CreateQuery">
   <DisplayName>AM-CreateQuery</DisplayName>
+  <AssignVariable>
+    <Ref>request.queryparam.limit</Ref>
+    <Value>10</Value>
+    <Name>bigquery.limit</Name>
+  </AssignVariable>
   <Set>
     <QueryParams/>
     <FormParams/>
     <Verb>POST</Verb>
     <Payload contentType="application/json">{
       "kind": "bigquery#queryResource",
-      "query": "SELECT product_name projectName, release_note_type noteType, description, published_at publishedAt FROM `bigquery-public-data.google_cloud_release_notes.release_notes` ORDER BY published_at DESC LIMIT 10",
+      "query": "SELECT product_name projectName, release_note_type noteType, description, published_at publishedAt FROM `bigquery-public-data.google_cloud_release_notes.release_notes` ORDER BY published_at DESC LIMIT {bigquery.limit}",
       "useLegacySql": false
     }</Payload>
   </Set>

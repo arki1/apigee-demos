@@ -5,23 +5,28 @@ info:
     This is a sample demo API to interact with BigQuery as backend and format a response
     message.
   contact:
-    email: ronoaldo@ronoaldo.com
+    email: ronoaldo@arki1.com
   license:
     name: Apache 2.0
     url: http://www.apache.org/licenses/LICENSE-2.0.html
-  version: "1.1.0"
+  version: "1.2.0"
 servers:
-  - url: http://34.171.124.235/eval/gcpreleases/v1
+  - url: https://apigee-34-171-124-235.sslip.io/eval/gcpreleases/v1
     description: Evaluation/QA Server
-  - url: http://34.171.124.235/prod/gcpreleases/v1
+  - url: https://apigee-34-171-124-235.sslip.io/prod/gcpreleases/v1
     description: Production Server
-  - url: http://localhost:8998/gcpreleases/v1
+  - url: http://localhost:9999/gcpreleases/v1
     description: Apigee Emulator
 paths:
   /releases:
     get:
-      summary: List 5 most recent release notes.
+      summary: List 10 most recent release notes.
       operationId: getReleases
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
       responses:
         '200':
           description: Successful operation

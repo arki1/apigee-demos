@@ -2,6 +2,7 @@
 ORG=training-gcp-demos
 ENV=eval
 SA=apigee-demos@$(ORG).iam.gserviceaccount.com
+SKIP_BUNDLE_UPLOAD=false
 
 # Global configuration
 PROXY=gcpreleases-v1
@@ -29,7 +30,9 @@ deploy-with-script: clean bundle
 	apigeecli token cache --token $$(gcloud auth print-access-token) 2>/dev/null >/dev/null
 
 deploy: clean bundle .apigeecli-setup
-	apigeecli apis create bundle --name $(PROXY) --proxy-zip $(BUNDLE_ZIP_FILE)
+	if [ "$(SKIP_BUNDLE_UPLOAD)" = "false" ] ; then \
+		apigeecli apis create bundle --name $(PROXY) --proxy-zip $(BUNDLE_ZIP_FILE) ;\
+	fi
 	apigeecli apis deploy --env $(ENV) --ovr --name $(PROXY) --sa $(SA) --wait
 
 clean-revisions: .apigeecli-setup

@@ -41,6 +41,6 @@ clean-revisions: .apigeecli-setup
 # Local API client helper
 swagger-ui:
 	docker run --rm --name swagger-ui -p 8999:8080 \
-		-v $(PWD)/src/main/apigee/apiproxies/gcpreleases-v1/apiproxy/resources/oas:/specs \
-		-e SWAGGER_JSON=/specs/gcprelease-v1.yaml \
+		-v $(PWD)/src/main/apigee/apiproxies:/specs \
+		-e SWAGGER_JSON=/specs/blogposts-v1/apiproxy/resources/oas/apispec.yaml \
 		swaggerapi/swagger-ui

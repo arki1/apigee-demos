@@ -5,6 +5,9 @@
       <Step>
         <Name>CORS-AddCORS</Name>
       </Step>
+      <Step>
+        <Name>KVM-GetValue</Name>
+      </Step>
     </Request>
     <Response/>
   </PreFlow>

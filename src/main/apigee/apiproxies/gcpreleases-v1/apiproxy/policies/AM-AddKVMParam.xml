@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<AssignMessage continueOnError="false" enabled="true" name="AM-AddKVMParam">
+  <Set>
+    <QueryParams>
+      <QueryParam name="kvmvalue">{foo.kvmvalue}</QueryParam>
+    </QueryParams>
+  </Set>
+</AssignMessage>

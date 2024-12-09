@@ -7,6 +7,9 @@
       <Step>
         <Name>AM-DontCopyPathSuffix</Name>
       </Step>
+      <Step>
+        <Name>AM-AddKVMParam</Name>
+      </Step>
     </Request>
     <Response/>
   </PreFlow>

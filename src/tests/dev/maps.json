@@ -1,0 +1,11 @@
+[
+    {
+        "name": "foo",
+        "encrypted": false,
+        "scope": "environment",
+        "environment": "dev",
+        "entries": {
+            "success": "value-from-kvm"
+        }
+    }
+]

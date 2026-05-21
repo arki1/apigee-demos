@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<KeyValueMapOperations async="false" continueOnError="false"
+<KeyValueMapOperations async="false" continueOnError="true"
     enabled="true" name="KVM-GetValue" mapIdentifier="foo">
     <DisplayName>KVM-GetValue</DisplayName>
     <ExpiryTimeInSecs>300</ExpiryTimeInSecs>

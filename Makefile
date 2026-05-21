@@ -1,5 +1,9 @@
 # Can be set from command line, like `make deploy ENV=prod`
+ifdef GOOGLE_CLOUD_PROJECT
+ORG=$(GOOGLE_CLOUD_PROJECT)
+else
 ORG=training-gcp-demos
+endif
 ENV=eval
 SA=apigee-demos@$(ORG).iam.gserviceaccount.com
 SKIP_BUNDLE_UPLOAD=false

@@ -21,8 +21,23 @@ To create a proxy bundle, use the helper target in the provided Makefile:
 A new file is created under the directory `target/bundles/`. Use that to upload
 a new proxy bundle to the `eval` environment following these instructions:
 https://cloud.google.com/apigee/docs/api-platform/fundamentals/download-api-proxies#upload.
-**Important**: make sure to deploy the proxy with a service account that can
+
+
+### Service Account Authentication
+
+Make sure to deploy the proxy with a service account that can
 access Bigquery public data and also has the Bigquery Job User role.
+It's also required that the Apigee Service can impersonate your Service Account.
+
+These commands can be adapted to create a service account and grant the required role:
+
+```bash
+gcloud iam service-accounts add-iam-policy-binding $YOUR_SERVICE_ACCOUNT_EMAIL \
+   --member="serviceAccount:service-$YOUR_PROJECT_NUMBER@gcp-sa-apigee.iam.gserviceaccount.com" \
+   --role="roles/iam.serviceAccountTokenCreator"
+```
+
+Learn more about the authentication setup at: https://docs.cloud.google.com/apigee/docs/api-platform/security/google-auth/overview#deployment-steps
 
 After you deploy/import your bundle, go to the Develop tab and edit the Target
 Endpoint bigquery, and change the URL final part to match your Google Cloud

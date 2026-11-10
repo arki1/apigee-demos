@@ -1,104 +1,168 @@
 # apigee-demos
 
-Apigee Demos. This demo uses the BigQuery API method that runs a query and
-synchronously returns the results to showcase how to implement and possibly
-monetize data-driven APIs.
+Apigee API Proxy demo (`gcpreleases-v1`) showcasing how to implement and monetize data-driven APIs on Google Cloud Apigee X / Hybrid using BigQuery.
 
-**This is intended for learning/demoing pourposes only! Do not publish
-unrestricted API endpoints that execute queries against your Google Project. It
-is an exercise for the reader to apply the needed security policies, quotas, and
-caching!**
+This project was inspired by the Google Cloud video on **Monetizing Data with Apigee**:
+* 🎥 [Inspiration: Monetizing Data with Apigee](https://www.youtube.com/watch?v=lUDZAzSpWEw)
+* 🎥 [In-depth Walkthrough: Implementation Details](https://youtu.be/58smxQu3P5k)
 
-## How to use this demo
+The demo leverages BigQuery's synchronous query execution method (`jobs.query`) to query Google Cloud public release notes and return formatted API responses, showing how enterprises can securely expose and productize their data assets through Apigee.
 
-This was tested using an Eval Org. The easier way is to bundle the proxy and use
-the .zip bundle to import a new version.
+This proxy demonstrates:
+* **Dynamic Target Routing:** Generates the BigQuery API query URL dynamically using Apigee's built-in `{organization.name}` variable (which matches your Google Cloud Project ID), avoiding hardcoded project names across environments.
+* **Google Authentication:** Configures `<GoogleAccessToken>` for secure, seamless IAM impersonation without static keys in production.
+* **Response Transformation:** Transforms BigQuery tabular query responses into simplified JSON or XML objects via JavaScript and XML policies.
+* **Environment Configuration:** Uses Key-Value Maps (KVM) for environment-specific parameters (e.g., `echoLimit`).
+* **Local Emulator Support:** Ready for local development with Cloud Code / Apigee Emulator in Docker.
 
-To create a proxy bundle, use the helper target in the provided Makefile:
+> [!WARNING]
+> This proxy is intended for demonstration and learning purposes. In a production environment, ensure you apply appropriate security policies (OAuth/API Keys), Spike Arrest, Quotas, and caching!
 
-    make bundle
+---
 
-A new file is created under the directory `target/bundles/`. Use that to upload
-a new proxy bundle to the `eval` environment following these instructions:
-https://cloud.google.com/apigee/docs/api-platform/fundamentals/download-api-proxies#upload.
+## Prerequisites
 
+Ensure the following tools are installed on your workstation:
 
-### Service Account Authentication
+* **Google Cloud SDK (`gcloud`):** Authenticated with permissions to manage Service Accounts and BigQuery (`gcloud auth login` and `gcloud auth application-default login`).
+* **Node.js (v18+) and npm:** For unit tests, linter, and integration tests.
+* **GNU `make`, `zip`, `unzip`, and `jq`:** Standard CLI build tools.
+* **Docker:** Required for running the Apigee Emulator, Cloud Code local runtime, and Swagger UI.
+* **[apigeecli](https://github.com/apigee/apigeecli) (Optional):** Required for automated deployments via `make deploy`. Install with:
+  ```bash
+  curl -L https://raw.githubusercontent.com/apigee/apigeecli/main/downloadLatest.sh | sh -
+  export PATH=$PATH:$HOME/.apigeecli/bin
+  ```
 
-Make sure to deploy the proxy with a service account that can
-access Bigquery public data and also has the Bigquery Job User role.
-It's also required that the Apigee Service can impersonate your Service Account.
+---
 
-These commands can be adapted to create a service account and grant the required role:
+## Configuration & Project Selection
+
+The provided [`Makefile`](Makefile) automatically resolves your active GCP project using:
+1. `$GOOGLE_CLOUD_PROJECT` (if set)
+2. `gcloud config get-value project` (active gcloud project)
+3. Default fallback: `training-gcp-demos`
+
+You can explicitly override the target organization/project on any `make` command:
+```bash
+make <target> ORG=my-custom-project-id
+```
+
+---
+
+## Local Development & Testing
+
+### 1. One-Step Local Setup
+
+To prepare your local environment for Cloud Code / Apigee Emulator, run:
 
 ```bash
-gcloud iam service-accounts add-iam-policy-binding $YOUR_SERVICE_ACCOUNT_EMAIL \
-   --member="serviceAccount:service-$YOUR_PROJECT_NUMBER@gcp-sa-apigee.iam.gserviceaccount.com" \
-   --role="roles/iam.serviceAccountTokenCreator"
+make setup-local
 ```
 
-Learn more about the authentication setup at: https://docs.cloud.google.com/apigee/docs/api-platform/security/google-auth/overview#deployment-steps
+This target:
+1. Generates `src/main/apigee/environments/dev/deployments.json` from the template, configuring your project's service account.
+2. Checks if `./cert/service-account.json` exists; if not, it automatically provisions the GCP Service Account with `roles/bigquery.user` and `roles/iam.serviceAccountTokenCreator`, and downloads the key to `./cert/` (which is kept out of Git via `.gitignore`).
 
-After you deploy/import your bundle, go to the Develop tab and edit the Target
-Endpoint bigquery, and change the URL final part to match your Google Cloud
-Project ID. Deploy this changed version to the eval environment.
+### 2. Linting & Static Analysis
 
-### Setup to use a Test VM
+Validate the API Proxy bundle against Apigee X best practices using `apigeelint`:
 
-1. Create a premptive VM (can be e2-micro) with Full Access to Google APIs permission
-2. Make sure to allow the firewall from IAP to port TCP 22, and ssh to the VM
-3. Install `jq`: `sudo apt-get update && sudo apt-get install -y jq`
-4. Export the environment variables:
+```bash
+./ci/lint.sh
 ```
+
+### 3. Unit Tests
+
+Run unit tests for JavaScript business logic (isolated transformation of BigQuery rows):
+
+```bash
+npm test
+```
+
+### 4. Running Integration Tests (BDD / Apickli)
+
+If you have the Apigee Emulator running locally on port 8998:
+
+```bash
+npm run integration-test
+```
+
+Or run the complete pre-commit check (detects emulator container, runs linter, unit tests, and integration tests):
+
+```bash
+./ci/pre-commit-checks.sh
+```
+
+### 5. Local OpenAPI / Swagger Preview
+
+To preview the API specification in a local Swagger UI container:
+
+```bash
+make swagger-ui
+```
+Open your browser at `http://localhost:8999`.
+
+---
+
+## Cloud Deployment (Apigee X / Hybrid)
+
+### Option A: Automated Deploy via `apigeecli` (Recommended)
+
+1. Provision the Service Account and IAM roles in Google Cloud:
+   ```bash
+   make service-account
+   ```
+2. Deploy the proxy bundle to your environment (`eval` by default):
+   ```bash
+   make deploy
+   ```
+   To deploy to a specific environment (e.g., `prod`):
+   ```bash
+   make deploy ENV=prod
+   ```
+
+### Option B: Manual Bundle Upload via Apigee Console
+
+1. Create a deployable `.zip` bundle:
+   ```bash
+   make bundle
+   ```
+   The bundle will be generated under `target/bundles/gcpreleases-v1_<timestamp>.zip`.
+2. In the Google Cloud Console, navigate to **Apigee > Proxies > Upload Proxy Bundle**.
+3. Deploy the proxy to your environment using the service account `apigee-demos@<PROJECT_ID>.iam.gserviceaccount.com`.
+
+> [!NOTE]
+> Unlike older versions of this demo, you **do not** need to edit the BigQuery target endpoint URL manually. The proxy automatically uses `{organization.name}` to route queries to your Google Cloud Project!
+
+---
+
+## Verifying the Deployment
+
+### From an internal Test VM or peered VPC:
+
+```bash
 export AUTH="Authorization: Bearer $(gcloud auth print-access-token)"
 export PROJECT_ID="$(gcloud config get project)"
-export ENV_GROUP_HOSTNAME=$(curl -H "$AUTH" https://apigee.googleapis.com/v1/organizations/$PROJECT_ID/envgroups -s | jq -r '.environmentGroups[0].hostnames[0]')
-export INTERNAL_LOAD_BALANCER_IP=$(curl -H "$AUTH" https://apigee.googleapis.com/v1/organizations/$PROJECT_ID/instances -s | jq -r '.instances[0].host')
-```
-5. Create a new entry in /etc/hosts to make easier to call it:
-```
-echo "$INTERNAL_LOAD_BALANCER_IP $ENV_GROUP_HOSTNAME" | sudo tee -a /etc/hosts
-```
-6. Make API calls:
-```
+export ENV_GROUP_HOSTNAME=$(curl -s -H "$AUTH" https://apigee.googleapis.com/v1/organizations/$PROJECT_ID/envgroups | jq -r '.environmentGroups[0].hostnames[0]')
+
+# Test the mock echo endpoint
 curl -k https://${ENV_GROUP_HOSTNAME}/gcpreleases/v1/echo | jq .
 
+# Query recent Google Cloud release notes from BigQuery
 curl -k https://${ENV_GROUP_HOSTNAME}/gcpreleases/v1/releases | jq .
+
+# Limit results and request XML format
+curl -k -H "Accept: application/xml" "https://${ENV_GROUP_HOSTNAME}/gcpreleases/v1/releases?limit=3"
 ```
 
-### Setup to use in localhost development
-
-You can also open this project using VS Code with the Cloud Code extension.
-The big picture is: you need to have a service-account.json file visible to the local
-Apigee Docker container as a volume folder, and set up the GOOGLE_APPLICATION_CREDENTIALS
-environment variable to point to that location. You also need to configure SSL certificates
-to call out the API.
-
-You need to follow some tutorials to test locally the Apigee -> Bigquery sample:
-
-1. Create a new service account key and save it on a local folder. I recommend using the `cert`
-   folder as it is in .gitignore. If you have deployed to Apigee Eval org as described previously, exporting
-   a new service account key using the same service account you created earlier should work.
-   **Important**: you need to add the role '**Service Account Token Creator**' to this account, in addition
-   to the '**Bigquery Job User**' role.
-2. Configure Cloud Code to use a service account. This requires configuring the docker environment
-   as described in
-   [this document](https://cloud.google.com/apigee/docs/api-platform/local-development/vscode/deploy-environment#configuring_service_accounts_with_proxy_and_shared_flow_deployments) and also
-   the container configuration [described here](https://cloud.google.com/apigee/docs/api-platform/local-development/vscode/manage-apigee-emulator#customizing_the_apigee_emulator_to_support_service_account-based_authentication).
-3. Follow the steps to deploy the environment using the instructions
-   [provided here](https://cloud.google.com/apigee/docs/api-platform/local-development/vscode/deploy-environment#deploy).
-
-When developping locally, you can fetch logs from your local container with this:
-
-    docker logs apigee-localhost 2>&1 >/dev/null | grep '^{' | jq -r .exceptionStackTrace
-
-This should make easier to see the local logs and stack traces if issues arise.
-Change the part `apigee-localhost` to the name you gave to your container during the
-local environment setup.
+---
 
 ## References
 
-* Inspiration: https://www.youtube.com/watch?v=lUDZAzSpWEw
-* Some in-depth inspiration with implementation details: https://youtu.be/58smxQu3P5k
-* Using Google Authentication docs: https://cloud.google.com/apigee/docs/api-platform/security/google-auth/overview
-* BDD Proxy Development with Apigee: https://github.com/apigee/devrel/blob/main/labs/bdd-proxy-development/lab.md
+* [Video: Monetizing Data with Apigee (Inspiration)](https://www.youtube.com/watch?v=lUDZAzSpWEw)
+* [Video: In-depth Walkthrough & Implementation Details](https://youtu.be/58smxQu3P5k)
+* [Apigee: Using Google Authentication](https://cloud.google.com/apigee/docs/api-platform/security/google-auth/overview)
+* [Apigee Emulator Local Development](https://cloud.google.com/apigee/docs/api-platform/local-development/vscode/overview)
+* [BDD Proxy Development with Apigee](https://github.com/apigee/devrel/blob/main/labs/bdd-proxy-development/lab.md)
+* [BigQuery Public Datasets: Google Cloud Release Notes](https://console.cloud.google.com/marketplace/product/bigquery-public-data/google-cloud-release-notes)

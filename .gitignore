@@ -2,3 +2,5 @@
 /target
 /src/tests/local-data-for-testing
 /node_modules
+src/main/apigee/environments/*/deployments.json
+src/tests/*/maps.json

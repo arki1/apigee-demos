@@ -5,7 +5,9 @@
         "scope": "environment",
         "environment": "dev",
         "entries": {
-            "echoLimit": "100"
+            "echoLimit": "100",
+            "gcpProjectId": "PROJECT_ID"
         }
     }
 ]
+

@@ -2,8 +2,16 @@
 <AssignMessage continueOnError="false" enabled="true" name="AM-SetBigQueryTarget">
   <DisplayName>AM-SetBigQueryTarget</DisplayName>
   <AssignVariable>
+    <Name>bigquery.projectId</Name>
+    <Ref>organization.name</Ref>
+  </AssignVariable>
+  <AssignVariable>
+    <Name>bigquery.projectId</Name>
+    <Ref>envcfg.gcpProjectId</Ref>
+  </AssignVariable>
+  <AssignVariable>
     <Name>target.url</Name>
-    <Template>https://bigquery.googleapis.com/bigquery/v2/projects/{organization.name}/queries</Template>
+    <Template>https://bigquery.googleapis.com/bigquery/v2/projects/{bigquery.projectId}/queries</Template>
   </AssignVariable>
   <IgnoreUnresolvedVariables>true</IgnoreUnresolvedVariables>
 </AssignMessage>

@@ -44,23 +44,52 @@ format_json() {
     fi
 }
 
-ensure_deployments_config() {
-    local target_env="${1:-${EMULATOR_ENV}}"
-    local env_dir="${SRC_DIR}/main/apigee/environments/${target_env}"
-    local template_file="${env_dir}/deployments.json.template"
-    local config_file="${env_dir}/deployments.json"
-
-    if [[ -f "${template_file}" ]]; then
-        local project_id="${PROJECT_ID:-${GOOGLE_CLOUD_PROJECT:-${GCP_PROJECT:-emulator-dev}}}"
-        if [[ -f "${EMULATOR_KEYS_DIR}/${EMULATOR_SA_KEY}" && -x "$(command -v jq 2>/dev/null)" ]]; then
-            local key_proj
-            key_proj="$(jq -r '.project_id // empty' "${EMULATOR_KEYS_DIR}/${EMULATOR_SA_KEY}" 2>/dev/null || true)"
-            [[ -n "${key_proj}" ]] && project_id="${key_proj}"
+resolve_project_id() {
+    local project_id="${PROJECT_ID:-${GOOGLE_CLOUD_PROJECT:-${GCP_PROJECT:-}}}"
+    if [[ -z "${project_id}" ]]; then
+        if command -v gcloud >/dev/null 2>&1; then
+            local gcloud_proj
+            gcloud_proj="$(gcloud config get-value project 2>/dev/null || true)"
+            [[ "${gcloud_proj}" != "(unset)" && -n "${gcloud_proj}" ]] && project_id="${gcloud_proj}"
         fi
-
-        info "Configuring ${config_file} with project '${project_id}' from template..."
-        sed "s/PROJECT_ID/${project_id}/g" "${template_file}" > "${config_file}"
     fi
+    if [[ -z "${project_id}" && -f "${EMULATOR_KEYS_DIR}/${EMULATOR_SA_KEY}" && -x "$(command -v jq 2>/dev/null)" ]]; then
+        local key_proj
+        key_proj="$(jq -r '.project_id // empty' "${EMULATOR_KEYS_DIR}/${EMULATOR_SA_KEY}" 2>/dev/null || true)"
+        [[ -n "${key_proj}" ]] && project_id="${key_proj}"
+    fi
+    [[ -z "${project_id}" ]] && project_id="emulator-dev"
+    echo "${project_id}"
+}
+
+ensure_local_configs() {
+    local target_env="${1:-${EMULATOR_ENV}}"
+    local project_id
+    project_id="$(resolve_project_id)"
+
+    # 1. deployments.json from template
+    local env_dir="${SRC_DIR}/main/apigee/environments/${target_env}"
+    local dep_template="${env_dir}/deployments.json.template"
+    local dep_config="${env_dir}/deployments.json"
+
+    if [[ -f "${dep_template}" ]]; then
+        info "Configuring ${dep_config} with project '${project_id}' from template..."
+        sed "s/PROJECT_ID/${project_id}/g" "${dep_template}" > "${dep_config}"
+    fi
+
+    # 2. maps.json from template (KVM envcfg)
+    local test_data_dir="${SRC_DIR}/tests/${target_env}"
+    local maps_template="${test_data_dir}/maps.json.template"
+    local maps_config="${test_data_dir}/maps.json"
+
+    if [[ -f "${maps_template}" ]]; then
+        info "Configuring ${maps_config} with project '${project_id}' from template..."
+        sed "s/PROJECT_ID/${project_id}/g" "${maps_template}" > "${maps_config}"
+    fi
+}
+
+ensure_deployments_config() {
+    ensure_local_configs "$@"
 }
 
 is_container_running() {
@@ -78,6 +107,7 @@ cmd_start() {
     fi
 
     mkdir -p "${EMULATOR_KEYS_DIR}"
+    ensure_local_configs "${EMULATOR_ENV}"
 
     if is_container_running; then
         info "Emulator container '${EMULATOR_CONTAINER}' is already running."

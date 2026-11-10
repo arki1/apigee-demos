@@ -1,7 +1,13 @@
 # Can be set from command line, like `make deploy ENV=prod`
 GCP_PROJECT := $(shell gcloud config get-value project 2>/dev/null)
+ifeq ($(strip $(GCP_PROJECT)),(unset))
+  GCP_PROJECT :=
+endif
 ifeq ($(strip $(GCP_PROJECT)),)
-  ifdef PROJECT_ID
+  SA_PROJECT := $(shell jq -r '.project_id // empty' cert/service-account.json 2>/dev/null)
+  ifneq ($(strip $(SA_PROJECT)),)
+    GCP_PROJECT := $(SA_PROJECT)
+  else ifdef PROJECT_ID
     GCP_PROJECT := $(PROJECT_ID)
   else
     GCP_PROJECT := training-gcp-demos
@@ -79,6 +85,7 @@ service-account-key: cert/service-account.json
 setup-local: cert/service-account.json
 	mkdir -p cert
 	sed "s/PROJECT_ID/$(ORG)/g" src/main/apigee/environments/dev/deployments.json.template > src/main/apigee/environments/dev/deployments.json
+	sed "s/PROJECT_ID/$(ORG)/g" src/tests/dev/maps.json.template > src/tests/dev/maps.json
 
 # Local emulator management via ci/apigee-emulator.sh
 emulator-start:

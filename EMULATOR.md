@@ -167,18 +167,12 @@ O emulador exige:
    ```
    > [!IMPORTANT]
    > Durante a inicialização do Microkernel Java (`RuntimeEmulator.main`), o emulador verifica se o arquivo apontado por `GOOGLE_APPLICATION_CREDENTIALS` existe no disco (`Files.exists`). Se existir, ele instancia o serviço `GoogleTokenService`. Se não existir, o serviço não é registrado e chamadas autenticadas falharão com erro interno (`NullPointerException`).
-3. **Mapeamento no `deployments.json`**:
-   O arquivo `src/main/apigee/environments/<env>/deployments.json` deve conter o e-mail exato da Service Account da chave:
-   ```json
-   {
-     "proxies": [
-       {
-         "name": "gcpreleases-v1",
-         "serviceAccount": "apigee-demos@SEU_PROJECT_ID.iam.gserviceaccount.com"
-       }
-     ]
-   }
-   ```
+3. **Mapeamento no `deployments.json` e KVM `maps.json`**:
+   Tanto o `deployments.json` quanto o KVM `maps.json` são gerados dinamicamente a partir dos templates (`*.template`) para refletir o Project ID correto da chave em `cert/service-account.json`:
+   * `src/main/apigee/environments/<env>/deployments.json.template`
+   * `src/tests/<env>/maps.json.template`
+
+   Ao rodar `make setup-local` ou `./ci/apigee-emulator.sh start`, os arquivos locais são gerados automaticamente e são ignorados pelo `.gitignore`.
 
 ---
 

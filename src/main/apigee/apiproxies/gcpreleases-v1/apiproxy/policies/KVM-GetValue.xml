@@ -9,4 +9,9 @@
             <Parameter>echoLimit</Parameter>
         </Key>
     </Get>
+    <Get assignTo="envcfg.gcpProjectId">
+        <Key>
+            <Parameter>gcpProjectId</Parameter>
+        </Key>
+    </Get>
 </KeyValueMapOperations>

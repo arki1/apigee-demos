@@ -1,27 +1,10 @@
-# Can be set from command line, like `make deploy ENV=prod`
-GCP_PROJECT := $(shell gcloud config get-value project 2>/dev/null)
-ifeq ($(strip $(GCP_PROJECT)),(unset))
-  GCP_PROJECT :=
-endif
-ifeq ($(strip $(GCP_PROJECT)),)
-  SA_PROJECT := $(shell jq -r '.project_id // empty' cert/service-account.json 2>/dev/null)
-  ifneq ($(strip $(SA_PROJECT)),)
-    GCP_PROJECT := $(SA_PROJECT)
-  else ifdef PROJECT_ID
-    GCP_PROJECT := $(PROJECT_ID)
-  else
-    GCP_PROJECT := training-gcp-demos
-  endif
-endif
-
-ifdef GOOGLE_CLOUD_PROJECT
-  ORG ?= $(GOOGLE_CLOUD_PROJECT)
-else
-  ORG ?= $(GCP_PROJECT)
-endif
-ENV=eval
-SA=apigee-demos@$(ORG).iam.gserviceaccount.com
-SKIP_BUNDLE_UPLOAD=false
+# Can be set from command line, like `make deploy ENV=prod` or `make deploy ORG=my-org`
+ORG ?= $(shell ci/detect-project-id.sh)
+GCP_PROJECT := $(ORG)
+PROJECT_ID ?= $(ORG)
+ENV ?= eval
+SA ?= apigee-demos@$(ORG).iam.gserviceaccount.com
+SKIP_BUNDLE_UPLOAD ?= false
 
 # Global configuration
 PROXY=gcpreleases-v1

@@ -4,8 +4,10 @@
 # deploy a proxy bundle to the eval environment.
 set -e
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 BUNDLE="$1"
-ORG="${ORG:-ronoaldo-apigee-demo}"
+ORG="${ORG:-$("${SCRIPT_DIR}/detect-project-id.sh")}"
 ENV="${ENV:-eval}"
 PROXY="gcpreleases-v1"
 SERVICE_ACCOUNT="${SERVICE_ACCOUNT:-apigee@${ORG}.iam.gserviceaccount.com}"

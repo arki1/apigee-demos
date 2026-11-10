@@ -45,21 +45,9 @@ format_json() {
 }
 
 resolve_project_id() {
-    local project_id="${PROJECT_ID:-${GOOGLE_CLOUD_PROJECT:-${GCP_PROJECT:-}}}"
-    if [[ -z "${project_id}" ]]; then
-        if command -v gcloud >/dev/null 2>&1; then
-            local gcloud_proj
-            gcloud_proj="$(gcloud config get-value project 2>/dev/null || true)"
-            [[ "${gcloud_proj}" != "(unset)" && -n "${gcloud_proj}" ]] && project_id="${gcloud_proj}"
-        fi
-    fi
-    if [[ -z "${project_id}" && -f "${EMULATOR_KEYS_DIR}/${EMULATOR_SA_KEY}" && -x "$(command -v jq 2>/dev/null)" ]]; then
-        local key_proj
-        key_proj="$(jq -r '.project_id // empty' "${EMULATOR_KEYS_DIR}/${EMULATOR_SA_KEY}" 2>/dev/null || true)"
-        [[ -n "${key_proj}" ]] && project_id="${key_proj}"
-    fi
-    [[ -z "${project_id}" ]] && project_id="emulator-dev"
-    echo "${project_id}"
+    "${SCRIPT_DIR}/detect-project-id.sh" \
+        --key-file "${EMULATOR_KEYS_DIR}/${EMULATOR_SA_KEY}" \
+        --default "emulator-dev"
 }
 
 ensure_local_configs() {

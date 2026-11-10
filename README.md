@@ -38,12 +38,11 @@ Ensure the following tools are installed on your workstation:
 
 ## Configuration & Project Selection
 
-The provided [`Makefile`](Makefile) automatically resolves your active GCP project using:
-1. `$ORG` or `make <target> ORG=...` (explicit CLI override)
-2. `$GOOGLE_CLOUD_PROJECT` (if set)
-3. `gcloud config get-value project` (active gcloud project)
-4. `$PROJECT_ID` (environment variable, e.g. from CI/CD)
-5. Default fallback: `training-gcp-demos`
+The project resolution is unified across the [`Makefile`](Makefile) and CI scripts via [`ci/detect-project-id.sh`](ci/detect-project-id.sh), resolving your active GCP project using:
+1. Explicit CLI argument or environment variables (`$ORG`, `$PROJECT_ID`, `$GOOGLE_CLOUD_PROJECT`, `$GCP_PROJECT`)
+2. `gcloud config get-value project` (active gcloud project)
+3. Local Service Account key file (`cert/service-account.json`)
+4. Default fallback: `training-gcp-demos` (or `emulator-dev` when using the emulator)
 
 You can explicitly override the target organization/project on any `make` command:
 ```bash

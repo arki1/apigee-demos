@@ -40,9 +40,9 @@
       <Request>
         <Step>
           <Name>RF-NotFound</Name>
-          <Description>Raises 404 if no valid request was specified</Description>
         </Step>
       </Request>
+      <Description>Raises 404 if no valid request was specified</Description>
     </Flow>
   </Flows>
   <PostFlow name="PostFlow">

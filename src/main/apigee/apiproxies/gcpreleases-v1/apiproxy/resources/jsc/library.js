@@ -1,5 +1,7 @@
+/*eslint strict: ["error", "never"]*/
+
 function parseRows(queryResponse) {
-    var rows = []
+    var rows = [];
     if (queryResponse.totalRows > 0) {
         for (var i=0; i < queryResponse.rows.length; i++) {
             var row = {};
@@ -9,9 +11,10 @@ function parseRows(queryResponse) {
             rows.push(row);
         }
     }
-    return rows
+    return rows;
 }
 
+// This makes the library visible outside of this function block
 library = {
-    "parseRows": parseRows
-}
+    parseRows: parseRows
+};

@@ -5,6 +5,9 @@
       <Step>
         <Name>AM-DontCopyPathSuffix</Name>
       </Step>
+      <Step>
+        <Name>AM-SetBigQueryTarget</Name>
+      </Step>
     </Request>
     <Response/>
   </PreFlow>
@@ -27,7 +30,7 @@
   </PostFlow>
   <Flows/>
   <HTTPTargetConnection>
-    <URL>https://bigquery.googleapis.com/bigquery/v2/projects/training-gcp-demos/queries</URL>
+    <URL>https://bigquery.googleapis.com/bigquery/v2</URL>
     <Authentication>
       <GoogleAccessToken>
         <Scopes>

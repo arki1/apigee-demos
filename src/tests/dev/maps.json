@@ -1,11 +1,11 @@
 [
     {
-        "name": "foo",
+        "name": "envcfg",
         "encrypted": false,
         "scope": "environment",
         "environment": "dev",
         "entries": {
-            "success": "value-from-kvm"
+            "echoLimit": "100"
         }
     }
 ]

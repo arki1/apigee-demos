@@ -21,6 +21,7 @@
     "@cucumber/pretty-formatter": "^1.0.0",
     "@xmldom/xmldom": "^0.8.10",
     "apickli": "^3.0.2",
+    "apigeelint": "^2.84.6",
     "mocha": "^10.2.0",
     "xpath": "^0.0.34"
   }

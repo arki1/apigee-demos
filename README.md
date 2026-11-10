@@ -49,45 +49,13 @@ You can explicitly override the target organization/project on any `make` comman
 make <target> ORG=my-custom-project-id
 ```
 
-### CI/CD Workflow Architecture
+### CI/CD & Deployment Overview
 
 This repository uses a two-tier strategy separating continuous validation from cloud deployment:
+* **Continuous Integration ([GitHub Actions](.github/workflows/ci.yml))**: Runs linting, unit tests, and launches the **Apigee Emulator in Docker** to execute end-to-end integration tests locally without incurring GCP cloud costs.
+* **Continuous Deployment ([Google Cloud Build](cloudbuild.yaml))**: Promotes validated proxy bundles from evaluation/QA (`eval`) to production (`prod`) upon passing live integration tests.
 
-```mermaid
-flowchart LR
-    subgraph GitHubActions["1. GitHub Actions (Continuous Integration)"]
-        direction TB
-        Commit["Git Push / PR"] --> Lint["Lint (apigeelint)"]
-        Lint --> Unit["Unit Tests (Mocha)"]
-        Unit --> Emu["Apigee Emulator (Docker)"]
-        Emu --> E2E["End-to-End Tests (Cucumber)"]
-    end
-
-    subgraph CloudBuild["2. Google Cloud Build (Manual Deploy Pipeline)"]
-        direction TB
-        Trigger["gcloud builds submit\n(_APIGEE_ORG=project)"] --> DeployEval["Deploy to Eval (QA)"]
-        DeployEval --> LiveTests["Live Tests against Eval Host"]
-        LiveTests -->|Success| DeployProd["Deploy to Prod"]
-    end
-```
-
-1. **GitHub Actions ([`.github/workflows/ci.yml`](.github/workflows/ci.yml))**:
-   - Runs on every `push` and `pull_request`.
-   - Executes linting, unit tests, and launches the **Apigee Emulator in Docker** to run end-to-end Cucumber integration tests locally without incurring GCP cloud costs or needing production credentials.
-
-2. **Cloud Build Deployment Pipeline ([`cloudbuild.yaml`](cloudbuild.yaml))**:
-   - Manually triggered when you are ready to validate and deploy to GCP cloud environments:
-     ```bash
-     gcloud builds submit \
-       --substitutions=_APIGEE_ORG=your-monthly-project-id,_APIGEE_HOST=your-eval-ingress.sslip.io/eval/gcpreleases/v1
-     ```
-   - Uses the following substitution variables:
-
-| Variable | Default Value | Description |
-|---|---|---|
-| `_APIGEE_ORG` | `${PROJECT_ID}` | Target GCP Project ID / Apigee Organization for deployment. |
-| `_APIGEE_HOST` | `apigee-34-171-124-235.sslip.io/eval/gcpreleases/v1` | Live ingress hostname used for post-eval integration tests. |
-| `_CLOUD_SDK_VERSION` | `latest` | Container image tag for `gcr.io/google.com/cloudsdktool/google-cloud-cli`. |
+For full architecture diagrams, workflow details, and Cloud Build substitutions, refer to [**`CICD.md`**](CICD.md).
 
 ---
 
@@ -137,7 +105,7 @@ Alternatively, manage the emulator directly with the standalone CLI:
 ./ci/apigee-emulator.sh stop
 ```
 
-For complete technical documentation on the emulator architecture, endpoints (`/v1/emulator/*`), and CI/CD integration, refer to [**`EMULATOR.md`**](EMULATOR.md).
+For complete technical documentation on the emulator architecture, endpoints (`/v1/emulator/*`), and CI/CD integration, refer to [**`EMULATOR.md`**](EMULATOR.md). For agent workflows, linter rules, and standardized development guidelines, refer to [**`AGENTS.md`**](AGENTS.md).
 
 ### 3. Linting & Static Analysis
 
@@ -233,8 +201,14 @@ curl -k -H "Accept: application/xml" "https://${ENV_GROUP_HOSTNAME}/gcpreleases/
 
 ---
 
-## References
+## Documentation & References
 
+### Project Documentation
+* [**`CICD.md`**](CICD.md): CI/CD architecture, pipeline workflows, and Google Cloud Build setup.
+* [**`EMULATOR.md`**](EMULATOR.md): Local Apigee Emulator technical guide and REST API reference.
+* [**`AGENTS.md`**](AGENTS.md): Best practice guidelines for AI agents, quality gates, and local verification loops.
+
+### External References
 * [Video: Monetizing Data with Apigee (Inspiration)](https://www.youtube.com/watch?v=lUDZAzSpWEw)
 * [Video: In-depth Walkthrough & Implementation Details](https://youtu.be/58smxQu3P5k)
 * [Apigee: Using Google Authentication](https://cloud.google.com/apigee/docs/api-platform/security/google-auth/overview)

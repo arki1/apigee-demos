@@ -1,43 +1,43 @@
-# Apigee Local Emulator: Guia Técnico e Referência
+# Apigee Local Emulator: Technical Guide & Reference
 
-Este documento descreve o funcionamento interno, arquitetura, endpoints REST e instruções de uso do **Apigee Emulator** (`gcr.io/apigee-release/hybrid/apigee-emulator`), utilizado para desenvolvimento e testes locais de proxies e automação em CI/CD.
+This document describes the internal workings, architecture, REST endpoints, and usage instructions for the **Apigee Emulator** (`gcr.io/apigee-release/hybrid/apigee-emulator`), used for local proxy development, testing, and CI/CD automation.
 
 ---
 
-## 1. Arquitetura e Funcionamento
+## 1. Architecture and Operation
 
-O container do Apigee Emulator roda uma versão local do runtime híbrido do Apigee encapsulado com uma instância local do Apache Cassandra e o Microkernel do Apigee:
+The Apigee Emulator container runs a local version of the Apigee hybrid runtime packaged with an embedded local Apache Cassandra instance and the Apigee Microkernel:
 
-* **Microkernel Java (`com.apigee.server.RuntimeEmulator`)**: Gerencia o ciclo de vida dos serviços internos, compilação de proxies e injeção de dependências.
-* **Apache Cassandra (local)**: Armazena dados de contratos, entidades e estados de runtime.
-* **ConfigCompiler (`com.apigee.config.compiler.ConfigCompiler`)**: Compilador que lê os arquivos XML de proxies, políticas e ambientes, validando e ativando os contratos de execução na memória do message processor.
+* **Java Microkernel (`com.apigee.server.RuntimeEmulator`)**: Manages the lifecycle of internal services, proxy compilation, and dependency injection.
+* **Apache Cassandra (local)**: Stores contract data, entities, and runtime states.
+* **ConfigCompiler (`com.apigee.config.compiler.ConfigCompiler`)**: A compiler that reads XML configuration files for proxies, policies, and environments, validating and activating execution contracts in the message processor's memory.
 
-### Portas e Comunicação
+### Ports and Communication
 
-O container opera com duas portas HTTP principais:
+The container operates with two primary HTTP ports:
 
-| Porta no Container | Porta no Host (Padrão) | Finalidade | Descrição |
+| Container Port | Host Port (Default) | Purpose | Description |
 | :--- | :--- | :--- | :--- |
-| **`8080`** | `8080` | **Management REST API** | Endpoint de controle para deploy de proxies, carga de dados de teste (KVMs) e inspeção. |
-| **`8998`** | `8999` | **Proxy Runtime Traffic** | Ponto de entrada HTTP para chamadas aos proxies implantados (ex: `http://localhost:8999/gcpreleases/v1/...`). |
+| **`8080`** | `8080` | **Management REST API** | Control endpoint for deploying proxies, loading test data (KVMs), and inspection. |
+| **`8998`** | `8999` | **Proxy Runtime Traffic** | HTTP ingress for requests directed to deployed proxies (e.g., `http://localhost:8999/gcpreleases/v1/...`). |
 
 > [!NOTE]
-> O emulador não monitora volumes automaticamente para compilação contínua. Toda compilação e deploy é acionada via chamadas HTTP na porta de gerenciamento (`8080`).
+> The emulator does not automatically watch filesystem volumes for continuous compilation. All compilation and deployment must be triggered via HTTP calls to the management port (`8080`).
 
 ---
 
-## 2. Referência da API de Gerenciamento (`/v1/emulator/*`)
+## 2. Management API Reference (`/v1/emulator/*`)
 
-A API de gerenciamento responde sob o prefixo `/v1`:
+The management API responds under the `/v1` path prefix:
 
-### 2.1 Informações e Status
+### 2.1 Information and Status
 
 #### `GET /v1/emulator/version`
-Retorna a versão do runtime e lista as features ativas no container:
+Returns the runtime version and active feature flags in the container:
 ```bash
 curl -s http://localhost:8080/v1/emulator/version | jq .
 ```
-Exemplo de resposta:
+Example response:
 ```json
 {
   "releaseId": "1.11",
@@ -56,11 +56,11 @@ Exemplo de resposta:
 ```
 
 #### `GET /v1/emulator/tree`
-Lista todos os proxies atualmente implantados no emulador e seus respectivos `basePath`s:
+Lists all proxies currently deployed to the emulator and their respective `basePath` configurations:
 ```bash
 curl -s http://localhost:8080/v1/emulator/tree | jq .
 ```
-Exemplo de resposta:
+Example response:
 ```json
 [
   {
@@ -74,38 +74,38 @@ Exemplo de resposta:
 
 ---
 
-### 2.2 Deploy de Proxies e Contratos
+### 2.2 Proxy & Contract Deployment
 
 #### `POST /v1/emulator/deploy?environment={env}`
-Recebe um arquivo `.zip` contendo a árvore `src/` (incluindo `src/main/apigee/apiproxies/` e `src/main/apigee/environments/{env}/deployments.json`). O emulador descompacta, valida via `ConfigCompiler` e faz o deploy a quente da revisão.
+Accepts a `.zip` file containing the `src/` tree (including `src/main/apigee/apiproxies/` and `src/main/apigee/environments/{env}/deployments.json`). The emulator decompresses the archive, validates it via `ConfigCompiler`, and hot-deploys the revision.
 
 * **Content-Type**: `application/octet-stream`
-* **Query Parameter**: `environment` (ex: `dev`)
+* **Query Parameter**: `environment` (e.g., `dev`)
 
-Exemplo de deploy:
+Example deploy:
 ```bash
 zip -r /tmp/bundle.zip src/
 curl -s -X POST "http://localhost:8080/v1/emulator/deploy?environment=dev" \
   -H "Content-Type: application/octet-stream" \
   --data-binary "@/tmp/bundle.zip"
 ```
-Resposta esperada:
+Expected response:
 ```json
 { "revision" : "1" }
 ```
 
 ---
 
-### 2.3 Dados de Teste e Mocks (KVMs, Apps, Products)
+### 2.3 Test Data and Mocks (KVMs, Apps, Products)
 
-O emulador aceita mocks de runtime para emular chamadas a KVMs, desenvolvedores, produtos de API e apps.
+The emulator supports runtime mocks to emulate Key-Value Maps (KVMs), developers, API products, and developer applications.
 
 #### `POST /v1/emulator/setup/tests`
-Carrega dados de teste a partir de um `.zip` contendo um ou mais arquivos JSON suportados (`maps.json`, `products.json`, `developers.json`, `developerapps.json`):
+Loads test data from a `.zip` archive containing one or more supported JSON definitions (`maps.json`, `products.json`, `developers.json`, `developerapps.json`):
 
 * **Content-Type**: `application/octet-stream`
 
-Exemplo (carregando KVMs):
+Example (loading KVMs):
 ```bash
 cd src/tests/dev && zip -r /tmp/testdata.zip maps.json
 curl -s -X POST "http://localhost:8080/v1/emulator/setup/tests" \
@@ -114,39 +114,39 @@ curl -s -X POST "http://localhost:8080/v1/emulator/setup/tests" \
 ```
 
 #### `GET /v1/emulator/test/maps`
-Consulta os Key-Value Maps carregados:
+Inspects currently loaded Key-Value Maps:
 ```bash
 curl -s http://localhost:8080/v1/emulator/test/maps | jq .
 ```
 
 #### `DELETE /v1/emulator/clear/test`
-Remove os dados de teste carregados:
+Clears previously loaded test mocks:
 ```bash
 curl -s -X DELETE http://localhost:8080/v1/emulator/clear/test
 ```
 
 ---
 
-### 2.4 Trace e Debug Local
+### 2.4 Local Trace & Debug
 
 #### `POST /v1/emulator/trace?environment={env}`
-Inicia uma sessão de trace/debug local.
+Initiates a local trace/debug session for the specified environment.
 
 #### `GET /v1/emulator/trace/transactions`
-Lista os dados coletados de transações que passaram pelo emulador durante a sessão de debug.
+Retrieves collected transaction trace data processed during the debug session.
 
 ---
 
-### 2.5 Reset do Emulador
+### 2.5 Emulator Reset
 
 #### `POST /v1/emulator/reset`
-Limpa os proxies e restaura o estado inicial do emulador sem precisar reiniciar o container.
+Clears deployed proxies and resets the emulator to its initial state without restarting the container.
 
 ---
 
-## 3. Autenticação com Service Account do Google Cloud
+## 3. Google Cloud Service Account Authentication
 
-Quando uma política ou TargetEndpoint utiliza autenticação Google (ex: `<GoogleAccessToken>` para acessar BigQuery, Cloud Storage ou Cloud Logging):
+When a policy or TargetEndpoint uses Google authentication (e.g., `<GoogleAccessToken>` to access BigQuery, Cloud Storage, or Cloud Logging):
 
 ```xml
 <Authentication>
@@ -158,74 +158,73 @@ Quando uma política ou TargetEndpoint utiliza autenticação Google (ex: `<Goog
 </Authentication>
 ```
 
-O emulador exige:
+The emulator requires:
 
-1. **Chave JSON montada no container**: Um diretório local contendo a chave (ex: `./cert/service-account.json`) montado em `/emulator/keys`.
-2. **Variável de Ambiente configurada no container**:
+1. **JSON Key mounted into the container**: A local directory containing the service account key (e.g., `./cert/service-account.json`) mounted at `/emulator/keys`.
+2. **Environment variable set on the container**:
    ```bash
    -e GOOGLE_APPLICATION_CREDENTIALS=/emulator/keys/service-account.json
    ```
    > [!IMPORTANT]
-   > Durante a inicialização do Microkernel Java (`RuntimeEmulator.main`), o emulador verifica se o arquivo apontado por `GOOGLE_APPLICATION_CREDENTIALS` existe no disco (`Files.exists`). Se existir, ele instancia o serviço `GoogleTokenService`. Se não existir, o serviço não é registrado e chamadas autenticadas falharão com erro interno (`NullPointerException`).
-3. **Mapeamento no `deployments.json` e KVM `maps.json`**:
-   Tanto o `deployments.json` quanto o KVM `maps.json` são gerados dinamicamente a partir dos templates (`*.template`) para refletir o Project ID correto da chave em `cert/service-account.json`:
+   > During Java Microkernel initialization (`RuntimeEmulator.main`), the emulator verifies if the file path configured in `GOOGLE_APPLICATION_CREDENTIALS` exists on disk (`Files.exists`). If present, it initializes the `GoogleTokenService`. If missing, the service is not registered and authenticated calls will fail with an internal error (`NullPointerException`).
+3. **Configuration mapping in `deployments.json` and KVM `maps.json`**:
+   Both `deployments.json` and the KVM `maps.json` are dynamically generated from template files (`*.template`) to reflect the exact Project ID of the service account in `cert/service-account.json`:
    * `src/main/apigee/environments/<env>/deployments.json.template`
    * `src/tests/<env>/maps.json.template`
 
-   Ao rodar `make setup-local` ou `./ci/apigee-emulator.sh start`, os arquivos locais são gerados automaticamente e são ignorados pelo `.gitignore`.
+   Running `make setup-local` or `./ci/apigee-emulator.sh start` automatically generates these local files, which are excluded from Git by `.gitignore`.
 
 ---
 
-## 4. Gerenciamento via CLI (`ci/apigee-emulator.sh`)
+## 4. Management via CLI (`ci/apigee-emulator.sh`)
 
-O script [`ci/apigee-emulator.sh`](file:///home/ronoaldo/workspace/apigee-demos/ci/apigee-emulator.sh) abstrai todas as operações acima em uma CLI prática:
+The script [`ci/apigee-emulator.sh`](ci/apigee-emulator.sh) wraps all emulator operations into an easy-to-use CLI:
 
 ```bash
-# Iniciar emulador e aguardar healthcheck
+# Start emulator and wait for healthy state
 ./ci/apigee-emulator.sh start
 
-# Fazer deploy do bundle atual e carregar mocks (KVMs)
+# Deploy current bundle and load mock KVMs
 ./ci/apigee-emulator.sh deploy dev
 
-# Inspecionar status e proxies ativos
+# Inspect status and active proxies
 ./ci/apigee-emulator.sh status
 
-# Fazer chamada de teste
+# Execute a test request
 ./ci/apigee-emulator.sh test /gcpreleases/v1/echo
 
-# Parar o emulador
+# Stop emulator container
 ./ci/apigee-emulator.sh stop
 ```
 
-### Variáveis de Configuração Suportadas
+### Supported Configuration Variables
 
-* `EMULATOR_IMAGE`: Imagem Docker (padrão: `gcr.io/apigee-release/hybrid/apigee-emulator:1.16.2`)
-* `EMULATOR_CONTAINER`: Nome do container (padrão: `apigee-localhost`)
-* `EMULATOR_MGMT_PORT`: Porta host da API de gerenciamento (padrão: `8080`)
-* `EMULATOR_RUNTIME_PORT`: Porta host do tráfego de proxies (padrão: `8999`)
-* `EMULATOR_KEYS_DIR`: Pasta local montada em `/emulator/keys` (padrão: `./cert`)
-* `EMULATOR_SA_KEY`: Nome do arquivo da chave no diretório de chaves (padrão: `service-account.json`)
-* `TIMEOUT_SECONDS`: Tempo limite para o healthcheck (padrão: `120`)
+* `EMULATOR_IMAGE`: Docker image tag (default: `gcr.io/apigee-release/hybrid/apigee-emulator:1.16.2`)
+* `EMULATOR_CONTAINER`: Docker container name (default: `apigee-localhost`)
+* `EMULATOR_MGMT_PORT`: Host port for management API (default: `8080`)
+* `EMULATOR_RUNTIME_PORT`: Host port for proxy runtime traffic (default: `8999`)
+* `EMULATOR_KEYS_DIR`: Host directory mounted to `/emulator/keys` (default: `./cert`)
+* `EMULATOR_SA_KEY`: Key filename inside the keys directory (default: `service-account.json`)
+* `TIMEOUT_SECONDS`: Maximum seconds to wait during healthcheck (default: `120`)
 
 ---
 
-## 5. Uso em Pipelines de CI/CD
+## 5. Usage in CI/CD Pipelines
 
-Exemplo de execução em pipelines (Cloud Build, GitHub Actions ou GitLab CI):
+Example automation in CI/CD pipelines (GitHub Actions, Cloud Build, GitLab CI):
 
 ```bash
-# 1. Inicia o emulador
+# 1. Start emulator
 ./ci/apigee-emulator.sh start
 
-# 2. Deploy do proxy e mocks
+# 2. Deploy proxy bundle and mocks
 ./ci/apigee-emulator.sh deploy dev
 
-# 3. Execução dos testes automatizados contra o emulador local
+# 3. Execute automated integration tests against local emulator
 export APIGEE_PROTO=http
 export APIGEE_HOST=localhost:8999/gcpreleases/v1
 npm run integration-test
 
-# 4. Encerra o container
+# 4. Stop and clean up container
 ./ci/apigee-emulator.sh stop
 ```
-

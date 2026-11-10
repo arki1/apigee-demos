@@ -75,3 +75,28 @@ service-account-key: cert/service-account.json
 setup-local: cert/service-account.json
 	mkdir -p cert
 	sed "s/PROJECT_ID/$(ORG)/g" src/main/apigee/environments/dev/deployments.json.template > src/main/apigee/environments/dev/deployments.json
+
+# Local emulator management via ci/apigee-emulator.sh
+emulator-start:
+	@ci/apigee-emulator.sh start
+
+emulator-wait:
+	@ci/apigee-emulator.sh wait
+
+emulator-deploy:
+	@ci/apigee-emulator.sh deploy $(ENV)
+
+emulator-status:
+	@ci/apigee-emulator.sh status
+
+emulator-test:
+	@ci/apigee-emulator.sh test
+
+emulator-stop:
+	@ci/apigee-emulator.sh stop
+
+emulator-restart:
+	@ci/apigee-emulator.sh restart
+
+emulator-logs:
+	@ci/apigee-emulator.sh logs

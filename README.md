@@ -64,7 +64,41 @@ This target:
 1. Generates `src/main/apigee/environments/dev/deployments.json` from the template, configuring your project's service account.
 2. Checks if `./cert/service-account.json` exists; if not, it automatically provisions the GCP Service Account with `roles/bigquery.user` and `roles/iam.serviceAccountTokenCreator`, and downloads the key to `./cert/` (which is kept out of Git via `.gitignore`).
 
-### 2. Linting & Static Analysis
+### 2. Local Emulator CLI & Deployment
+
+You can run the Apigee Emulator in Docker and deploy proxies locally using the provided CLI or Makefile targets:
+
+```bash
+# Start emulator (if not running) and deploy the local proxy + test mocks
+make emulator-deploy
+
+# Check emulator version and deployed proxies
+make emulator-status
+
+# Test the deployed proxy endpoints locally
+make emulator-test
+```
+
+Alternatively, manage the emulator directly with the standalone CLI:
+
+```bash
+# Start and wait for healthy state
+./ci/apigee-emulator.sh start
+
+# Deploy to 'dev' environment
+./ci/apigee-emulator.sh deploy dev
+
+# Test endpoints
+./ci/apigee-emulator.sh test /gcpreleases/v1/echo
+./ci/apigee-emulator.sh test /gcpreleases/v1/releases
+
+# Stop emulator container
+./ci/apigee-emulator.sh stop
+```
+
+For complete technical documentation on the emulator architecture, endpoints (`/v1/emulator/*`), and CI/CD integration, refer to [**`EMULATOR.md`**](EMULATOR.md).
+
+### 3. Linting & Static Analysis
 
 Validate the API Proxy bundle against Apigee X best practices using `apigeelint`:
 
@@ -72,7 +106,7 @@ Validate the API Proxy bundle against Apigee X best practices using `apigeelint`
 ./ci/lint.sh
 ```
 
-### 3. Unit Tests
+### 4. Unit Tests
 
 Run unit tests for JavaScript business logic (isolated transformation of BigQuery rows):
 
@@ -80,7 +114,7 @@ Run unit tests for JavaScript business logic (isolated transformation of BigQuer
 npm test
 ```
 
-### 4. Running Integration Tests (BDD / Apickli)
+### 5. Running Integration Tests (BDD / Apickli)
 
 If you have the Apigee Emulator running locally on port 8998:
 
@@ -94,7 +128,7 @@ Or run the complete pre-commit check (detects emulator container, runs linter, u
 ./ci/pre-commit-checks.sh
 ```
 
-### 5. Local OpenAPI / Swagger Preview
+### 6. Local OpenAPI / Swagger Preview
 
 To preview the API specification in a local Swagger UI container:
 

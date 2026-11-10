@@ -5,10 +5,10 @@
 set -e
 
 BUNDLE="$1"
-ORG="ronoaldo-apigee-demo"
-ENV="eval"
+ORG="${ORG:-ronoaldo-apigee-demo}"
+ENV="${ENV:-eval}"
 PROXY="gcpreleases-v1"
-SERVICE_ACCOUNT="apigee@ronoaldo-apigee-demo.iam.gserviceaccount.com"
+SERVICE_ACCOUNT="${SERVICE_ACCOUNT:-apigee@${ORG}.iam.gserviceaccount.com}"
 APIGEE_API="https://apigee.googleapis.com/v1"
 
 TOKEN="$(gcloud auth print-access-token)"

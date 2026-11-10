@@ -1,7 +1,11 @@
 # Can be set from command line, like `make deploy ENV=prod`
 GCP_PROJECT := $(shell gcloud config get-value project 2>/dev/null)
 ifeq ($(strip $(GCP_PROJECT)),)
-  GCP_PROJECT := training-gcp-demos
+  ifdef PROJECT_ID
+    GCP_PROJECT := $(PROJECT_ID)
+  else
+    GCP_PROJECT := training-gcp-demos
+  endif
 endif
 
 ifdef GOOGLE_CLOUD_PROJECT

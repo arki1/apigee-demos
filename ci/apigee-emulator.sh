@@ -51,15 +51,15 @@ ensure_deployments_config() {
     local config_file="${env_dir}/deployments.json"
 
     if [[ -f "${template_file}" ]]; then
-        local project_id="${PROJECT_ID:-${GOOGLE_CLOUD_PROJECT:-${GCP_PROJECT:-}}}"
-        if [[ -z "${project_id}" && -f "${EMULATOR_KEYS_DIR}/${EMULATOR_SA_KEY}" && -x "$(command -v jq 2>/dev/null)" ]]; then
-            project_id="$(jq -r '.project_id // empty' "${EMULATOR_KEYS_DIR}/${EMULATOR_SA_KEY}" 2>/dev/null || true)"
+        local project_id="${PROJECT_ID:-${GOOGLE_CLOUD_PROJECT:-${GCP_PROJECT:-emulator-dev}}}"
+        if [[ -f "${EMULATOR_KEYS_DIR}/${EMULATOR_SA_KEY}" && -x "$(command -v jq 2>/dev/null)" ]]; then
+            local key_proj
+            key_proj="$(jq -r '.project_id // empty' "${EMULATOR_KEYS_DIR}/${EMULATOR_SA_KEY}" 2>/dev/null || true)"
+            [[ -n "${key_proj}" ]] && project_id="${key_proj}"
         fi
 
-        if [[ -n "${project_id}" ]]; then
-            info "Configuring ${config_file} with project '${project_id}' from template..."
-            sed "s/PROJECT_ID/${project_id}/g" "${template_file}" > "${config_file}"
-        fi
+        info "Configuring ${config_file} with project '${project_id}' from template..."
+        sed "s/PROJECT_ID/${project_id}/g" "${template_file}" > "${config_file}"
     fi
 }
 

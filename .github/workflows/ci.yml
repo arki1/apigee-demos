@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+    branches: [ "**" ]
+  pull_request:
+    branches: [ master, main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci || npm install
+
+      - name: Run Lint
+        run: npm run lint
+
+      - name: Run Unit Tests
+        run: npm test
+
+      - name: Setup Apigee Emulator Keys (if secret provided)
+        if: "${{ env.GCP_SA_KEY != '' }}"
+        env:
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+        run: |
+          mkdir -p cert
+          echo "$GCP_SA_KEY" > cert/service-account.json
+
+      - name: Start Apigee Emulator
+        run: ./ci/apigee-emulator.sh start
+
+      - name: Deploy Proxy to Emulator
+        run: ./ci/apigee-emulator.sh deploy dev
+
+      - name: Check Emulator Status
+        run: ./ci/apigee-emulator.sh status
+
+      - name: Run End-to-End Integration Tests on Emulator
+        run: |
+          export APIGEE_PROTO=http
+          export APIGEE_HOST=localhost:8999/gcpreleases/v1
+          # If a GCP SA key was configured, run all integration tests (including BigQuery).
+          # Otherwise run offline/mock integration tests (echo, oas, errors).
+          if [ -f cert/service-account.json ]; then
+            npm run integration-test
+          else
+            ./node_modules/.bin/cucumber-js \
+              test/integration-tests/echo.feature \
+              test/integration-tests/oas.feature \
+              test/integration-tests/errors.feature \
+              -f @cucumber/pretty-formatter
+          fi
+
+      - name: Stop Apigee Emulator
+        if: always()
+        run: ./ci/apigee-emulator.sh stop
+

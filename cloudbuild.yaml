@@ -1,4 +1,6 @@
-# CI/CD pipeline for Apigee Demos project
+# Apigee Demos - Manual Deployment Pipeline (QA/Eval -> Integration Tests -> Prod)
+# Trigger manually using:
+#   gcloud builds submit --substitutions=_APIGEE_ORG=your-project-id,_APIGEE_HOST=your-eval-host/eval/gcpreleases/v1
 
 steps:
   # Install dependencies into 'node_modules'
@@ -15,15 +17,19 @@ steps:
   
   # Package and deploy API Proxy Bundle after unit testing
   # TODO(ronoaldo): move this logic to custom cloud builder.
-  - name: 'gcr.io/google.com/cloudsdktool/google-cloud-cli:461.0.0'
+  - name: 'gcr.io/google.com/cloudsdktool/google-cloud-cli:${_CLOUD_SDK_VERSION}'
     id: deploy-to-eval
+    env:
+      - 'ORG=${_APIGEE_ORG}'
+      - 'GOOGLE_CLOUD_PROJECT=${_APIGEE_ORG}'
+      - 'CLOUDSDK_CORE_PROJECT=${_APIGEE_ORG}'
     script: |
       #!/usr/bin/env bash
       set -e
       apt-get update && apt-get -yq install make zip unzip
       curl -L https://raw.githubusercontent.com/apigee/apigeecli/main/downloadLatest.sh | sh -
       export PATH=$PATH:$HOME/.apigeecli/bin
-      make deploy
+      make deploy ORG="${_APIGEE_ORG}"
 
   # Run unit integration tests on deployed target
   - name: 'node:18'
@@ -31,17 +37,26 @@ steps:
     entrypoint: 'npm'
     args: ['run', 'integration-test']
     env:
-    - 'APIGEE_PROTO=https'
-    - 'APIGEE_HOST=apigee-34-171-124-235.sslip.io/eval/gcpreleases/v1'
+      - 'APIGEE_PROTO=https'
+      - 'APIGEE_HOST=${_APIGEE_HOST}'
 
   # Deploy package to production if integration tests pass
   # TODO(ronoaldo): move this logic to custom cloud builder.
-  - name: 'gcr.io/google.com/cloudsdktool/google-cloud-cli:461.0.0'
+  - name: 'gcr.io/google.com/cloudsdktool/google-cloud-cli:${_CLOUD_SDK_VERSION}'
     id: deploy-to-prod
+    env:
+      - 'ORG=${_APIGEE_ORG}'
+      - 'GOOGLE_CLOUD_PROJECT=${_APIGEE_ORG}'
+      - 'CLOUDSDK_CORE_PROJECT=${_APIGEE_ORG}'
     script: |
       #!/usr/bin/env bash
       set -e
       apt-get update && apt-get -yq install make zip unzip
       curl -L https://raw.githubusercontent.com/apigee/apigeecli/main/downloadLatest.sh | sh -
       export PATH=$PATH:$HOME/.apigeecli/bin
-      make deploy ENV=prod SKIP_BUNDLE_UPLOAD=true
+      make deploy ENV=prod SKIP_BUNDLE_UPLOAD=true ORG="${_APIGEE_ORG}"
+
+substitutions:
+  _APIGEE_ORG: '${PROJECT_ID}'
+  _APIGEE_HOST: 'apigee-34-171-124-235.sslip.io/eval/gcpreleases/v1'
+  _CLOUD_SDK_VERSION: 'latest'

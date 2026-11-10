@@ -39,14 +39,56 @@ Ensure the following tools are installed on your workstation:
 ## Configuration & Project Selection
 
 The provided [`Makefile`](Makefile) automatically resolves your active GCP project using:
-1. `$GOOGLE_CLOUD_PROJECT` (if set)
-2. `gcloud config get-value project` (active gcloud project)
-3. Default fallback: `training-gcp-demos`
+1. `$ORG` or `make <target> ORG=...` (explicit CLI override)
+2. `$GOOGLE_CLOUD_PROJECT` (if set)
+3. `gcloud config get-value project` (active gcloud project)
+4. `$PROJECT_ID` (environment variable, e.g. from CI/CD)
+5. Default fallback: `training-gcp-demos`
 
 You can explicitly override the target organization/project on any `make` command:
 ```bash
 make <target> ORG=my-custom-project-id
 ```
+
+### CI/CD Workflow Architecture
+
+This repository uses a two-tier strategy separating continuous validation from cloud deployment:
+
+```mermaid
+flowchart LR
+    subgraph GitHubActions["1. GitHub Actions (Continuous Integration)"]
+        direction TB
+        Commit["Git Push / PR"] --> Lint["Lint (apigeelint)"]
+        Lint --> Unit["Unit Tests (Mocha)"]
+        Unit --> Emu["Apigee Emulator (Docker)"]
+        Emu --> E2E["End-to-End Tests (Cucumber)"]
+    end
+
+    subgraph CloudBuild["2. Google Cloud Build (Manual Deploy Pipeline)"]
+        direction TB
+        Trigger["gcloud builds submit\n(_APIGEE_ORG=project)"] --> DeployEval["Deploy to Eval (QA)"]
+        DeployEval --> LiveTests["Live Tests against Eval Host"]
+        LiveTests -->|Success| DeployProd["Deploy to Prod"]
+    end
+```
+
+1. **GitHub Actions ([`.github/workflows/ci.yml`](.github/workflows/ci.yml))**:
+   - Runs on every `push` and `pull_request`.
+   - Executes linting, unit tests, and launches the **Apigee Emulator in Docker** to run end-to-end Cucumber integration tests locally without incurring GCP cloud costs or needing production credentials.
+
+2. **Cloud Build Deployment Pipeline ([`cloudbuild.yaml`](cloudbuild.yaml))**:
+   - Manually triggered when you are ready to validate and deploy to GCP cloud environments:
+     ```bash
+     gcloud builds submit \
+       --substitutions=_APIGEE_ORG=your-monthly-project-id,_APIGEE_HOST=your-eval-ingress.sslip.io/eval/gcpreleases/v1
+     ```
+   - Uses the following substitution variables:
+
+| Variable | Default Value | Description |
+|---|---|---|
+| `_APIGEE_ORG` | `${PROJECT_ID}` | Target GCP Project ID / Apigee Organization for deployment. |
+| `_APIGEE_HOST` | `apigee-34-171-124-235.sslip.io/eval/gcpreleases/v1` | Live ingress hostname used for post-eval integration tests. |
+| `_CLOUD_SDK_VERSION` | `latest` | Container image tag for `gcr.io/google.com/cloudsdktool/google-cloud-cli`. |
 
 ---
 

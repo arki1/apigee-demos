@@ -1,5 +1,9 @@
 # Apigee Local Emulator: Technical Guide & Reference
 
+> [!CAUTION]
+> **Disclaimer: Unofficial Documentation**
+> This guide is an unofficial technical reference created and maintained by the community based on reverse engineering, container inspection, and operational practice. Google does not provide formal or comprehensive documentation for the standalone Apigee Emulator container (`gcr.io/apigee-release/hybrid/apigee-emulator`) or its internal management REST APIs. Features, internal APIs, and behaviors may vary across image versions without formal notice.
+
 This document describes the internal workings, architecture, REST endpoints, and usage instructions for the **Apigee Emulator** (`gcr.io/apigee-release/hybrid/apigee-emulator`), used for local proxy development, testing, and CI/CD automation.
 
 ---
@@ -199,7 +203,7 @@ The script [`ci/apigee-emulator.sh`](ci/apigee-emulator.sh) wraps all emulator o
 
 ### Supported Configuration Variables
 
-* `EMULATOR_IMAGE`: Docker image tag (default: `gcr.io/apigee-release/hybrid/apigee-emulator:1.16.2`)
+* `EMULATOR_IMAGE`: Docker image tag (default: `gcr.io/apigee-release/hybrid/apigee-emulator:2.0.2`)
 * `EMULATOR_CONTAINER`: Docker container name (default: `apigee-localhost`)
 * `EMULATOR_MGMT_PORT`: Host port for management API (default: `8080`)
 * `EMULATOR_RUNTIME_PORT`: Host port for proxy runtime traffic (default: `8999`)

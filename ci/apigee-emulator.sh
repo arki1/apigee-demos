@@ -9,7 +9,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
 # Configurable options via environment variables
-EMULATOR_IMAGE="${EMULATOR_IMAGE:-gcr.io/apigee-release/hybrid/apigee-emulator:1.16.2}"
+EMULATOR_IMAGE="${EMULATOR_IMAGE:-gcr.io/apigee-release/hybrid/apigee-emulator:2.0.2}"
 EMULATOR_CONTAINER="${EMULATOR_CONTAINER:-apigee-localhost}"
 EMULATOR_MGMT_PORT="${EMULATOR_MGMT_PORT:-8080}"
 EMULATOR_RUNTIME_PORT="${EMULATOR_RUNTIME_PORT:-8999}"
